@@ -1,46 +1,136 @@
-# Hermes Slack Events Listener
+# slack-events-listener
 
-Receives Slack DMs and app-mention events, verifies signatures, and writes
-them to `inbox.jsonl` so Hermes can read your replies on the next run.
+A lightweight, containerized Slack Events API receiver. It listens for direct
+messages and app mentions, verifies Slack request signatures, and writes events
+to a JSONL inbox that any downstream service can read.
+
+Use it as:
+
+- A Slack-to-queue bridge for an autonomous agent such as Hermes.
+- A webhook sink that turns Slack push events into structured local records.
+- A starting point for a Slack bot backend.
+
+## What it does
+
+- Receives Slack events at `/slack/events`.
+- Verifies the `X-Slack-Signature` header using your Slack signing secret.
+- Handles the Slack URL-verification handshake automatically.
+- Records accepted events to a JSONL file (`inbox.jsonl`) with metadata:
+  `source`, `user`, `channel`, `text`, `event_ts`, and `ts`.
+- Exposes a `/health` endpoint for container orchestration.
+
+## Supported events
+
+| Slack event | Recorded as | Filter |
+|-------------|-------------|--------|
+| `message.im` | `source: dm` | Ignores bot messages and subtypes; optionally restricted to a single allowed user. |
+| `app_mention` | `source: mention` | Ignores bot messages. |
 
 ## Files
 
-- `slack_events_server.py` — Flask/Gunicorn event receiver.
-- `Dockerfile` — container image.
-- `hermes-slack-events.xml` — Unraid Docker template.
+- `slack_events_server.py` — Flask/Gunicorn receiver with signature verification.
+- `Dockerfile` — production container image (Alpine Python 3.12).
+- `hermes-slack-events.xml` — Unraid Docker template (example deployment).
 - `nginx-slack.conf` — nginx location fragment to proxy `/slack/events`.
-- `run.sh` — local manual run wrapper (not needed in production).
+- `run.sh` — local development wrapper.
+- `read_dm_history.py` / `send_test_dm.py` — helper scripts for testing.
 
-## Setup
+## Quick start
 
-1. In Slack app settings, add bot scopes:
+1. Create a Slack app and enable **Event Subscriptions**.
+2. Add bot token scopes:
    - `app_mentions:read`
    - `im:history`
    - `im:read`
-   - `chat:write`
-
-2. Subscribe to bot events:
+   - `chat:write` (only if your downstream service replies)
+3. Subscribe to bot events:
    - `message.im`
    - `app_mention`
-
-3. Create the signing-secret file on Unraid:
-   ```bash
-   echo -n 'YOUR_SIGNING_SECRET' > /opt/data/.slack-signing-secret
-   chmod 600 /opt/data/.slack-signing-secret
-   ```
-
-4. Build the image and create the container from the Unraid template.
-
-5. Add the nginx location from `nginx-slack.conf` to your public Hermes host.
-
-6. Set the Slack Request URL to:
+4. Set the Slack Request URL to:
    ```
    https://yourdomain/slack/events
    ```
+5. Provide your Slack signing secret:
+   ```bash
+   export SLACK_SIGNING_SECRET='your-signing-secret'
+   ```
+6. Run locally:
+   ```bash
+   pip install -r requirements.txt
+   python3 slack_events_server.py
+   ```
+   By default the server binds to a Unix socket at `/data-socket/events.sock`.
+7. Send a test DM or mention; events appear in `inbox.jsonl`.
 
-7. Slack will send a URL-verification challenge; the server responds automatically.
+## Configuration
 
-## Hermes pickup
+All values are optional unless marked required.
 
-Hermes reads `/opt/data/projects/sysdash/slack/inbox.jsonl` at startup and can
-act on queued messages. After processing, it should clear or rotate the file.
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SLACK_SIGNING_SECRET` *(required)* | — | Slack app signing secret. Also loaded from `/run/secrets/slack_signing_secret` or `/data/slack_signing_secret` if not in env. |
+| `SLACK_INBOX_PATH` | `/data/inbox.jsonl` | Destination JSONL file. |
+| `SLACK_SOCKET_PATH` | `/data-socket/events.sock` | Unix socket path when no `SLACK_BIND` is set. |
+| `SLACK_BIND` | `unix:{SLACK_SOCKET_PATH}` | Bind address, e.g. `0.0.0.0:3010` for TCP. |
+| `SLACK_ALLOWED_USER_ID` | *(empty)* | If set, only DMs from this Slack user ID are recorded. |
+| `SLACK_BOT_USER_ID` | *(empty)* | Your bot's user ID; its own messages are ignored. |
+
+## Docker
+
+Build and run with TCP:
+
+```bash
+docker build -t slack-events-listener .
+docker run -d \
+  -e SLACK_SIGNING_SECRET="$SLACK_SIGNING_SECRET" \
+  -e SLACK_INBOX_PATH=/data/inbox.jsonl \
+  -v "$(pwd)/data:/data" \
+  -p 3010:3010 \
+  slack-events-listener
+```
+
+Or mount a secrets file instead of exposing the secret in env:
+
+```bash
+docker run -d \
+  -v "/path/to/slack_signing_secret:/run/secrets/slack_signing_secret:ro" \
+  -v "$(pwd)/data:/data" \
+  -p 3010:3010 \
+  slack-events-listener
+```
+
+## Sample consumer
+
+Read the inbox from a script:
+
+```python
+import json
+from pathlib import Path
+
+for line in Path("inbox.jsonl").read_text().splitlines():
+    event = json.loads(line)
+    print(event["source"], event["user"], event["text"])
+```
+
+Clear or rotate the file after processing to avoid duplicate handling.
+
+## Hermes integration
+
+For Hermes Agent specifically:
+
+- Point `SLACK_INBOX_PATH` to a path Hermes can read on startup.
+- Set `SLACK_ALLOWED_USER_ID` to your own Slack member ID so only your DMs
+  become agent tasks.
+- Use the included `nginx-slack.conf` to route public HTTPS traffic to the
+  container's Unix socket, keeping the listener port-unbound on the host.
+
+## Security
+
+- Always configure the Slack signing secret in production. Without it, the
+  server accepts unsigned events (useful only for local testing).
+- Run the container as a non-root user in production.
+- Keep `inbox.jsonl` on a volume restricted to the services that need it.
+
+## License
+
+MIT
