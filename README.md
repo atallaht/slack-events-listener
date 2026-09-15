@@ -33,7 +33,6 @@ Use it as:
 - `hermes-slack-events.xml` — Unraid Docker template (example deployment).
 - `nginx-slack.conf` — nginx location fragment to proxy `/slack/events`.
 - `run.sh` — local development wrapper.
-- `read_dm_history.py` / `send_test_dm.py` — helper scripts for testing.
 
 ## Quick start
 
@@ -68,7 +67,7 @@ All values are optional unless marked required.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `SLACK_SIGNING_SECRET` *(required)* | — | Slack app signing secret. Also loaded from `/run/secrets/slack_signing_secret` or `/data/slack_signing_secret` if not in env. |
+| `SLACK_SIGNING_SECRET` *(required)* | — | Slack app signing secret. Also loaded from `/run/secrets/slack_signing_secret`, `/data/slack_signing_secret`, or `/config/slack_signing_secret` if not in env. |
 | `SLACK_INBOX_PATH` | `/data/inbox.jsonl` | Destination JSONL file. |
 | `SLACK_SOCKET_PATH` | `/data-socket/events.sock` | Unix socket path when no `SLACK_BIND` is set. |
 | `SLACK_BIND` | `unix:{SLACK_SOCKET_PATH}` | Bind address, e.g. `0.0.0.0:3010` for TCP. |
@@ -119,7 +118,7 @@ Clear or rotate the file after processing to avoid duplicate handling.
 For Hermes Agent specifically:
 
 - Point `SLACK_INBOX_PATH` to a path Hermes can read on startup.
-- Set `SLACK_ALLOWED_USER_ID` to your own Slack member ID so only your DMs
+- `SLACK_ALLOWED_USER_ID` — set to your own Slack member ID so only your DMs
   become agent tasks.
 - Use the included `nginx-slack.conf` to route public HTTPS traffic to the
   container's Unix socket, keeping the listener port-unbound on the host.

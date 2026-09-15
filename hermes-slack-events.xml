@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Container version="2">
-  <Name>hermes-slack-events</Name>
-  <Repository>local/hermes-slack-events</Repository>
+  <Name>slack-events-listener</Name>
+  <Repository>local/slack-events-listener</Repository>
   <Registry/>
   <Network>host</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support/>
-  <Project>https://hermes-agent.nousresearch.com/docs</Project>
-  <Overview>Slack Events listener for Hermes Agent. Receives DMs and app mentions from Slack and writes them to an inbox file so Hermes can read replies on the next run.</Overview>
+  <Project>https://github.com/atallaht/slack-events-listener</Project>
+  <Overview>Slack Events listener. Receives DMs and app mentions from Slack and writes them to an inbox JSONL file for downstream consumers.</Overview>
   <Category>Tools: Network:Messenger Status:Beta</Category>
   <WebUI/>
   <TemplateURL/>
@@ -20,13 +20,13 @@
   <DateInstalled/>
   <DonateText/>
   <DonateLink/>
-  <Description>Slack Events listener for Hermes Agent.</Description>
+  <Description>Slack Events listener.</Description>
   <Networking>
     <Mode>host</Mode>
   </Networking>
   <Data>
     <Volume>
-      <HostDir>/opt/data/projects/sysdash/slack</HostDir>
+      <HostDir>/path/to/inbox</HostDir>
       <ContainerDir>/data</ContainerDir>
       <Mode>rw</Mode>
     </Volume>
@@ -38,7 +38,7 @@
       <Mode/>
     </Variable>
     <Variable>
-      <Value>U0C1NA8SQTT</Value>
+      <Value/>
       <Name>SLACK_ALLOWED_USER_ID</Name>
       <Mode/>
     </Variable>
@@ -55,8 +55,8 @@
   </Environment>
   <Labels/>
   <Config Name="TCP bind address" Target="SLACK_BIND" Default="127.0.0.1:3010" Mode="" Description="Address and port to bind in host network mode. Use 127.0.0.1 so nginx can proxy, or 0.0.0.0 for external access." Type="Variable" Display="always" Required="true" Mask="false">127.0.0.1:3010</Config>
-  <Config Name="Inbox directory" Target="/data" Default="/opt/data/projects/hermes-slack-events" Mode="rw" Description="Where inbox.jsonl is stored" Type="Path" Display="always" Required="true" Mask="false">/opt/data/projects/hermes-slack-events</Config>
-  <Config Name="Slack signing secret" Target="SLACK_SIGNING_SECRET" Default="" Mode="" Description="Your Slack app signing secret. Create it with: echo -n 'YOUR_SECRET' &gt; /opt/data/secrets/slack_signing_secret &amp;&amp; chmod 600 /opt/data/secrets/slack_signing_secret" Type="Variable" Display="always" Required="true" Mask="true"/>
-  <Config Name="Allowed Slack user ID" Target="SLACK_ALLOWED_USER_ID" Default="U0C1NA8SQTT" Mode="" Description="Only DMs from this Slack user ID are recorded" Type="Variable" Display="always" Required="true" Mask="false">U0C1NA8SQTT</Config>
+  <Config Name="Inbox directory" Target="/data" Default="/path/to/inbox" Mode="rw" Description="Directory where inbox.jsonl is stored. Mount this to a host directory." Type="Path" Display="always" Required="true" Mask="false">/path/to/inbox</Config>
+  <Config Name="Slack signing secret" Target="SLACK_SIGNING_SECRET" Default="" Mode="" Description="Your Slack app signing secret. Mount a secrets file to /run/secrets/slack_signing_secret, /data/slack_signing_secret, or /config/slack_signing_secret, or enter it here." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Allowed Slack user ID" Target="SLACK_ALLOWED_USER_ID" Default="" Mode="" Description="Only DMs from this Slack user ID are recorded. Leave empty to allow all DMs." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="Slack bot user ID" Target="SLACK_BOT_USER_ID" Default="" Mode="" Description="Optional: your Slack bot's user ID, so it ignores its own messages" Type="Variable" Display="always" Required="false" Mask="false"/>
 </Container>
