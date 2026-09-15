@@ -14,7 +14,10 @@ from pathlib import Path
 
 from flask import Flask, request, jsonify
 
+from admin_ui import register_admin_routes
+
 app = Flask(__name__)
+register_admin_routes(app)
 
 SOCKET_PATH = Path(os.environ.get("SLACK_SOCKET_PATH", "/data-socket/events.sock"))
 INBOX_PATH = Path(os.environ.get("SLACK_INBOX_PATH", "/data/inbox.jsonl"))
@@ -151,9 +154,11 @@ if __name__ == "__main__":
     bind_addr = os.environ.get("SLACK_BIND")
     if not bind_addr:
         bind_addr = f"unix:{SOCKET_PATH}"
+        _ensure_socket_parent()
+        _cleanup_socket()
+    else:
+        _log(f"Using TCP bind: {bind_addr} (socket setup skipped)")
 
-    _ensure_socket_parent()
-    _cleanup_socket()
     _log(f"Starting Slack events receiver on {bind_addr}")
     _log(f"Inbox: {INBOX_PATH}")
     _log(f"Signing secret loaded: {bool(SLACK_SIGNING_SECRET)}")
