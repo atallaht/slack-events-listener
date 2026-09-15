@@ -1,18 +1,18 @@
 #!/bin/sh
 # Quick local run wrapper for the Slack events receiver.
-# In production, use the Unraid Docker container.
+# In production, use the Docker container or the Unraid template.
 set -e
 
-SOCKET_DIR="/opt/data/projects/sysdash/slack"
+# Directory for the Unix socket. Change to match your environment.
+SOCKET_DIR="${SOCKET_DIR:-/tmp/slack-events-listener}"
 mkdir -p "$SOCKET_DIR"
 
-export SLACK_SOCKET_PATH="${SOCKET_DIR}/events.sock"
-export SLACK_INBOX_PATH="/opt/data/projects/hermes-slack-events/inbox.jsonl"
+export SLACK_SOCKET_PATH="${SLACK_SOCKET_PATH:-${SOCKET_DIR}/events.sock}"
+export SLACK_INBOX_PATH="${SLACK_INBOX_PATH:-${SOCKET_DIR}/inbox.jsonl}"
 
-# Load secrets from disk if env vars are not set
-[ -z "$SLACK_SIGNING_SECRET" ] && [ -f /opt/data/.slack-signing-secret ] && export SLACK_SIGNING_SECRET=$(cat /opt/data/.slack-signing-secret)
-# Make the file available at the path the code expects when running locally
-[ -f /opt/data/.slack-signing-secret ] && cp /opt/data/.slack-signing-secret /run/secrets/slack_signing_secret 2>/dev/null || true
+# Load the signing secret from disk if the env var is not set.
+if [ -z "$SLACK_SIGNING_SECRET" ] && [ -f "$HOME/.slack-signing-secret" ]; then
+    export SLACK_SIGNING_SECRET=$(cat "$HOME/.slack-signing-secret")
+fi
 
-cd /opt/data/projects/sysdash/slack
 python3 slack_events_server.py

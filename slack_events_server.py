@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 SOCKET_PATH = Path(os.environ.get("SLACK_SOCKET_PATH", "/data-socket/events.sock"))
 INBOX_PATH = Path(os.environ.get("SLACK_INBOX_PATH", "/data/inbox.jsonl"))
-ALLOWED_USER_ID = os.environ.get("SLACK_ALLOWED_USER_ID", "U0C1NA8SQTT")
+ALLOWED_USER_ID = os.environ.get("SLACK_ALLOWED_USER_ID", "")
 BOT_USER_ID = os.environ.get("SLACK_BOT_USER_ID", "")
 
 
@@ -42,7 +42,7 @@ SLACK_SIGNING_SECRET = _load_secret(
     "SLACK_SIGNING_SECRET",
     "/run/secrets/slack_signing_secret",
     "/data/slack_signing_secret",
-    "/opt/data/secrets/slack_signing_secret",
+    "/config/slack_signing_secret",
 )
 
 
