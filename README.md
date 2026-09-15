@@ -18,6 +18,7 @@ Use it as:
 - Records accepted events to a JSONL file (`inbox.jsonl`) with metadata:
   `source`, `user`, `channel`, `text`, `event_ts`, and `ts`.
 - Exposes a `/health` endpoint for container orchestration.
+- Serves an `/admin` page to view and edit configuration.
 
 ## Supported events
 
@@ -29,10 +30,13 @@ Use it as:
 ## Files
 
 - `slack_events_server.py` — Flask/Gunicorn receiver with signature verification.
+- `admin_ui.py` — self-contained admin page and API.
+- `config_store.py` — config file read/write.
 - `Dockerfile` — production container image (Alpine Python 3.12).
 - `hermes-slack-events.xml` — Unraid Docker template (example deployment).
 - `nginx-slack.conf` — nginx location fragment to proxy `/slack/events`.
 - `run.sh` — local development wrapper.
+- `tests/` — pytest suite.
 
 ## Quick start
 
@@ -73,6 +77,14 @@ All values are optional unless marked required.
 | `SLACK_BIND` | `unix:{SLACK_SOCKET_PATH}` | Bind address, e.g. `0.0.0.0:3010` for TCP. |
 | `SLACK_ALLOWED_USER_ID` | *(empty)* | If set, only DMs from this Slack user ID are recorded. |
 | `SLACK_BOT_USER_ID` | *(empty)* | Your bot's user ID; its own messages are ignored. |
+
+| `SLACK_CONFIG_PATH` | `/data/config.env` | Path to the admin-managed config file. |
+
+## Admin UI
+
+Open `/admin` in a browser to view and edit configuration. Values are saved to
+`SLACK_CONFIG_PATH`. Environment variables still take precedence over the file.
+Restart the container after saving for changes to take effect.
 
 ## Docker
 
