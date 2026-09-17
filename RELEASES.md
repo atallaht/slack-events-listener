@@ -7,7 +7,6 @@
 - **GitHub Container Registry publishing.** The repository now builds and pushes a Docker image automatically on every pushed tag and commit to `main`.
   - Image: `ghcr.io/atallaht/slack-events-listener`
   - Tags include semantic versions, branch names, and short SHA.
-  - Images are signed with GitHub artifact attestations.
 - **Unraid template updated.** `hermes-slack-events.xml` now references the published `ghcr.io/atallaht/slack-events-listener` image instead of the local-only `local/slack-events-listener` placeholder.
 - **No runtime changes.** The container still listens on `0.0.0.0:3010` by default, verifies Slack signatures, and writes DMs/mentions to `/data/inbox.jsonl`.
 
@@ -53,4 +52,4 @@ Before submitting to Unraid Community Applications:
 
 ### Known limitations
 
-- The admin UI and config store are present in the image but the Dockerfile only copies `slack_events_server.py`. If you need the admin UI in the published image, the Dockerfile must also copy `admin_ui.py`, `config_store.py`, and any templates. That is intentionally left for a future release.
+- None for v0.1.0. The published image now includes all required runtime files.
