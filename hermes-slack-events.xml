@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Container version="2">
   <Name>slack-events-listener</Name>
-  <Repository>local/slack-events-listener</Repository>
-  <Registry/>
+  <Repository>ghcr.io/atallaht/slack-events-listener</Repository>
+  <Registry>ghcr.io</Registry>
   <Network>host</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support/>
+  <Support>https://github.com/atallaht/slack-events-listener/issues</Support>
   <Project>https://github.com/atallaht/slack-events-listener</Project>
   <Overview>Slack Events listener. Receives DMs and app mentions from Slack and writes them to an inbox JSONL file for downstream consumers.</Overview>
   <Category>Tools: Network:Messenger Status:Beta</Category>
@@ -58,5 +58,5 @@
   <Config Name="Inbox directory" Target="/data" Default="/path/to/inbox" Mode="rw" Description="Directory where inbox.jsonl is stored. Mount this to a host directory." Type="Path" Display="always" Required="true" Mask="false">/path/to/inbox</Config>
   <Config Name="Slack signing secret" Target="SLACK_SIGNING_SECRET" Default="" Mode="" Description="Your Slack app signing secret. Mount a secrets file to /run/secrets/slack_signing_secret, /data/slack_signing_secret, or /config/slack_signing_secret, or enter it here." Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Allowed Slack user ID" Target="SLACK_ALLOWED_USER_ID" Default="" Mode="" Description="Only DMs from this Slack user ID are recorded. Leave empty to allow all DMs." Type="Variable" Display="always" Required="false" Mask="false"/>
-  <Config Name="Slack bot user ID" Target="SLACK_BOT_USER_ID" Default="" Mode="" Description="Optional: your Slack bot's user ID, so it ignores its own messages" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Slack bot user ID" Target="SLACK_BOT_USER_ID" Default="" Mode="" Description="Optional: your bot's user ID, so it ignores its own messages" Type="Variable" Display="always" Required="false" Mask="false"/>
 </Container>

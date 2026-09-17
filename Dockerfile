@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY slack_events_server.py .
+COPY slack_events_server.py admin_ui.py config_store.py ./
 
 ENV PYTHONUNBUFFERED=1
 ENV SLACK_BIND=0.0.0.0:3010
