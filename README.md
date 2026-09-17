@@ -40,6 +40,8 @@ Use it as:
 
 ## Quick start
 
+### Using Docker
+
 1. Create a Slack app and enable **Event Subscriptions**.
 2. Add bot token scopes:
    - `app_mentions:read`
@@ -53,17 +55,33 @@ Use it as:
    ```
    https://yourdomain/slack/events
    ```
-5. Provide your Slack signing secret:
+5. Pull and run the image from GitHub Container Registry:
    ```bash
-   export SLACK_SIGNING_SECRET='your-signing-secret'
+   docker pull ghcr.io/atallaht/slack-events-listener:main
+   docker run -d \
+     --name slack-events-listener \
+     --network host \
+     -e SLACK_BIND=0.0.0.0:3010 \
+     -e SLACK_SIGNING_SECRET="your-signing-secret" \
+     -e SLACK_ALLOWED_USER_ID="your-slack-user-id" \
+     -v "$(pwd)/data:/data" \
+     ghcr.io/atallaht/slack-events-listener:main
    ```
-6. Run locally:
-   ```bash
-   pip install -r requirements.txt
-   python3 slack_events_server.py
-   ```
-   By default the server binds to a Unix socket at `/data-socket/events.sock`.
-7. Send a test DM or mention; events appear in `inbox.jsonl`.
+
+> **Note:** If the repository/image is private, log in first:
+> ```bash
+> docker login ghcr.io -u atallaht -p <GITHUB_TOKEN>
+> ```
+
+### Running locally
+
+```bash
+pip install -r requirements.txt
+export SLACK_SIGNING_SECRET='your-secret'
+python3 slack_events_server.py
+```
+
+By default the server binds to a Unix socket at `/data-socket/events.sock`.
 
 ## Configuration
 
@@ -71,20 +89,30 @@ All values are optional unless marked required.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `SLACK_SIGNING_SECRET` *(required)* | — | Slack app signing secret. Also loaded from `/run/secrets/slack_signing_secret`, `/data/slack_signing_secret`, or `/config/slack_signing_secret` if not in env. |
+| `SLACK_SIGNING_SECRET` *(required)* | — | Slack app signing secret. Also loaded from `/run/secrets/slack_signing_secret`, `/data/slack_signing_secret`, `/config/slack_signing_secret`, or the admin config file at `/data/config.env`. |
 | `SLACK_INBOX_PATH` | `/data/inbox.jsonl` | Destination JSONL file. |
 | `SLACK_SOCKET_PATH` | `/data-socket/events.sock` | Unix socket path when no `SLACK_BIND` is set. |
 | `SLACK_BIND` | `unix:{SLACK_SOCKET_PATH}` | Bind address, e.g. `0.0.0.0:3010` for TCP. |
 | `SLACK_ALLOWED_USER_ID` | *(empty)* | If set, only DMs from this Slack user ID are recorded. |
 | `SLACK_BOT_USER_ID` | *(empty)* | Your bot's user ID; its own messages are ignored. |
-
 | `SLACK_CONFIG_PATH` | `/data/config.env` | Path to the admin-managed config file. |
+
+### Configuration precedence
+
+1. Environment variables (highest priority)
+2. Admin config file at `SLACK_CONFIG_PATH` (e.g., `/data/config.env`)
+3. Secret files under `/run/secrets/`, `/data/`, or `/config/`
+4. Built-in defaults
+
+This means you can deploy the container with no secrets in env vars, open the
+admin UI, save your signing secret and allowed user ID, and then restart the
+container for the values to take effect.
 
 ## Admin UI
 
 Open `/admin` in a browser to view and edit configuration. Values are saved to
-`SLACK_CONFIG_PATH`. Environment variables still take precedence over the file.
-Restart the container after saving for changes to take effect.
+`SLACK_CONFIG_PATH`. Settings that require a restart are marked as such. After
+saving, restart the container for those changes to take effect.
 
 ## Docker
 
@@ -93,7 +121,7 @@ Build and run with TCP:
 ```bash
 docker build -t slack-events-listener .
 docker run -d \
-  -e SLACK_SIGNING_SECRET="$SLACK_SIGNING_SECRET" \
+  -e SLACK_SIGNING_SECRET="$SLACK...CRET" \
   -e SLACK_INBOX_PATH=/data/inbox.jsonl \
   -v "$(pwd)/data:/data" \
   -p 3010:3010 \

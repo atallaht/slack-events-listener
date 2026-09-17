@@ -21,15 +21,39 @@ register_admin_routes(app)
 
 SOCKET_PATH = Path(os.environ.get("SLACK_SOCKET_PATH", "/data-socket/events.sock"))
 INBOX_PATH = Path(os.environ.get("SLACK_INBOX_PATH", "/data/inbox.jsonl"))
-ALLOWED_USER_ID = os.environ.get("SLACK_ALLOWED_USER_ID", "")
-BOT_USER_ID = os.environ.get("SLACK_BOT_USER_ID", "")
+ALLOWED_USER_ID = ""
+BOT_USER_ID = ""
+
+
+CONFIG_PATH = Path(os.environ.get("SLACK_CONFIG_PATH", "/data/config.env"))
+
+
+def _parse_env_file(path: Path) -> dict[str, str]:
+    """Parse a simple KEY=VALUE file."""
+    values: dict[str, str] = {}
+    if not path.exists():
+        return values
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, raw_value = line.partition("=")
+        values[key.strip()] = raw_value.strip().strip("'\"")
+    return values
 
 
 def _load_secret(name: str, env_var: str, *candidate_paths: str) -> str:
-    """Load a secret from env var or the first readable file path."""
+    """Load a secret from env var, the admin config file, or readable file paths."""
     value = os.environ.get(env_var, "").strip()
     if value:
         return value
+
+    # Admin UI stores values in /data/config.env; check there as a fallback.
+    config_values = _parse_env_file(CONFIG_PATH)
+    value = config_values.get(env_var, "").strip()
+    if value:
+        return value
+
     for raw in candidate_paths:
         path = Path(raw)
         if path.exists() and path.is_file():
@@ -47,6 +71,12 @@ SLACK_SIGNING_SECRET = _load_secret(
     "/data/slack_signing_secret",
     "/config/slack_signing_secret",
 )
+
+# Reload values that may be stored in the admin config file so they take effect
+# after a container restart without requiring new environment variables.
+_CONFIG_VALUES = _parse_env_file(CONFIG_PATH)
+ALLOWED_USER_ID = os.environ.get("SLACK_ALLOWED_USER_ID", _CONFIG_VALUES.get("SLACK_ALLOWED_USER_ID", "")).strip()
+BOT_USER_ID = os.environ.get("SLACK_BOT_USER_ID", _CONFIG_VALUES.get("SLACK_BOT_USER_ID", "")).strip()
 
 
 def _log(msg: str) -> None:
